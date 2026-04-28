@@ -1,7 +1,7 @@
 export async function POST(req) {
   const { origin, destinations } = await req.json();
 
-  const API_KEY = "AIzaSyCr1qVtOAtl0tokrB8NWlWNcD4_kjhBA7I";
+  const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
   const results = [];
 
