@@ -18,14 +18,19 @@ export async function POST(req) {
           "X-Goog-Api-Key": API_KEY,
           "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
         },
-        body: JSON.stringify({
-          origin: { address: origin },
-          destination: { address: dest },
-          travelMode: "DRIVE",
-          routingPreference: "TRAFFIC_UNAWARE",
-          languageCode: "ko-KR",
-          units: "METRIC",
-        }),
+body: JSON.stringify({
+  origin: {
+    address: origin,
+  },
+  destination: {
+    address: dest,
+  },
+  travelMode: "DRIVE",
+  routingPreference: "TRAFFIC_AWARE",
+  computeAlternativeRoutes: false,
+  languageCode: "ko-KR",
+  units: "METRIC",
+}),
       });
 
       const data = await res.json();
