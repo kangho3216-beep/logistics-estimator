@@ -19,7 +19,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const handleClick = async () => {
-    if (!start) {
+    if (!start.trim()) {
       alert("출발지를 입력해라");
       return;
     }
@@ -56,17 +56,18 @@ export default function Home() {
 
   return (
     <div style={{ padding: "40px", fontFamily: "Arial" }}>
-      <h1>🚛 물류 자동 견적기</h1>
+      <h1>🚛 물류 자동 견적기 v2</h1>
       <p>출발지를 입력하면 등록된 도착지까지 거리 계산</p>
 
       <input
         value={start}
         onChange={(e) => setStart(e.target.value)}
         placeholder="출발지 입력"
-        style={{ padding: "10px", width: "320px" }}
+        style={{ padding: "10px", width: "360px" }}
       />
 
-      <br /><br />
+      <br />
+      <br />
 
       <button onClick={handleClick} style={{ padding: "10px 20px" }}>
         {loading ? "계산중..." : "거리 계산"}
@@ -85,9 +86,7 @@ export default function Home() {
           <li key={i}>
             {start} → {r.destination} : {r.distance}
             {r.duration && ` / ${r.duration}`}
-            {r.detail && (
-              <span style={{ color: "red" }}> ({r.detail})</span>
-            )}
+            {r.detail && <span style={{ color: "red" }}> ({r.detail})</span>}
           </li>
         ))}
       </ul>
