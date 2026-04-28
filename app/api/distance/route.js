@@ -16,7 +16,7 @@ export async function POST(req) {
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": API_KEY,
-          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
+"X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline",
         },
 body: JSON.stringify({
   origin: {
