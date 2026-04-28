@@ -27,19 +27,30 @@ export default function Home() {
     setLoading(true);
     setResult([]);
 
-    const res = await fetch("/api/distance", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        origin: start,
-        destinations: DESTINATIONS,
-      }),
-    });
+    try {
+      const res = await fetch("/api/distance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          origin: start,
+          destinations: DESTINATIONS,
+        }),
+      });
 
-    const data = await res.json();
-    setResult(data);
+      const data = await res.json();
+      setResult(data);
+    } catch (error) {
+      setResult([
+        {
+          destination: "전체",
+          distance: "요청 실패",
+          detail: error.message,
+        },
+      ]);
+    }
+
     setLoading(false);
   };
 
@@ -52,7 +63,7 @@ export default function Home() {
         value={start}
         onChange={(e) => setStart(e.target.value)}
         placeholder="출발지 입력"
-        style={{ padding: "10px", width: "300px" }}
+        style={{ padding: "10px", width: "320px" }}
       />
 
       <br /><br />
@@ -70,14 +81,15 @@ export default function Home() {
 
       <h3 style={{ marginTop: "30px" }}>📊 계산 결과</h3>
       <ul>
-{result.map((r, i) => (
-  <li key={i}>
-    {start} → {r.destination} : {r.distance}
-    {r.detail && (
-      <span style={{ color: "red" }}> ({r.detail})</span>
-    )}
-  </li>
-))}
+        {result.map((r, i) => (
+          <li key={i}>
+            {start} → {r.destination} : {r.distance}
+            {r.duration && ` / ${r.duration}`}
+            {r.detail && (
+              <span style={{ color: "red" }}> ({r.detail})</span>
+            )}
+          </li>
+        ))}
       </ul>
     </div>
   );
