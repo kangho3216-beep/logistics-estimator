@@ -1,7 +1,7 @@
 export async function POST(req) {
   const { origin, destinations } = await req.json();
 
-  const API_KEY = "여기에_너_API키";
+  const API_KEY = "AIzaSyCr1qVtOAtl0tokrB8NWlWNcD4_kjhBA7I";
 
   const results = [];
 
