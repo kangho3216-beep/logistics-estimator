@@ -70,11 +70,14 @@ export default function Home() {
 
       <h3 style={{ marginTop: "30px" }}>📊 계산 결과</h3>
       <ul>
-        {result.map((r, i) => (
-          <li key={i}>
-            {start} → {r.destination} : {r.distance}
-          </li>
-        ))}
+{result.map((r, i) => (
+  <li key={i}>
+    {start} → {r.destination} : {r.distance}
+    {r.detail && (
+      <span style={{ color: "red" }}> ({r.detail})</span>
+    )}
+  </li>
+))}
       </ul>
     </div>
   );
