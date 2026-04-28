@@ -56,7 +56,7 @@ export default function Home() {
 
   return (
     <div style={{ padding: "40px", fontFamily: "Arial" }}>
-      <h1>🚛 물류 자동 견적기 v2</h1>
+      <h1>🚛 물류 자동 견적기 v3</h1>
       <p>출발지를 입력하면 등록된 도착지까지 거리 계산</p>
 
       <input
