@@ -3,61 +3,75 @@ export async function POST(req) {
 
   const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
-  if (!API_KEY) {
-    return Response.json({ error: "API 키가 설정되지 않았습니다." }, { status: 500 });
-  }
-
   const results = [];
 
+  // 🔹 주소 → 좌표 변환 함수
+  const getLatLng = async (address) => {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        address
+      )}&key=${API_KEY}`
+    );
+
+    const data = await res.json();
+
+    if (data.status !== "OK") return null;
+
+    return data.results[0].geometry.location;
+  };
+
+  const originCoord = await getLatLng(origin);
+
+  if (!originCoord) {
+    return Response.json([{ error: "출발지 좌표 변환 실패" }]);
+  }
+
   for (let dest of destinations) {
-    try {
-      const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+    const destCoord = await getLatLng(dest);
+
+    if (!destCoord) {
+      results.push({
+        destination: dest,
+        distance: "좌표 변환 실패",
+      });
+      continue;
+    }
+
+    const res = await fetch(
+      "https://routes.googleapis.com/directions/v2:computeRoutes",
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": API_KEY,
-"X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline",
+          "X-Goog-FieldMask": "routes.distanceMeters",
         },
-body: JSON.stringify({
-  origin: {
-    address: origin,
-  },
-  destination: {
-    address: dest,
-  },
-  travelMode: "DRIVE",
-  routingPreference: "TRAFFIC_AWARE",
-  computeAlternativeRoutes: false,
-  languageCode: "ko-KR",
-  units: "METRIC",
-}),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        results.push({
-          destination: dest,
-          distance: "에러",
-          detail: data.error?.message || "API 오류",
-        });
-        continue;
+        body: JSON.stringify({
+          origin: {
+            location: {
+              latLng: originCoord,
+            },
+          },
+          destination: {
+            location: {
+              latLng: destCoord,
+            },
+          },
+          travelMode: "DRIVE",
+        }),
       }
+    );
 
-      const meters = data.routes?.[0]?.distanceMeters;
+    const data = await res.json();
 
-      results.push({
-        destination: dest,
-        distance: meters ? `${(meters / 1000).toFixed(1)} km` : "경로 없음",
-        duration: data.routes?.[0]?.duration || "",
-      });
-    } catch (err) {
-      results.push({
-        destination: dest,
-        distance: "에러",
-        detail: err.message,
-      });
-    }
+    const meters = data.routes?.[0]?.distanceMeters;
+
+    results.push({
+      destination: dest,
+      distance: meters
+        ? (meters / 1000).toFixed(1) + " km"
+        : "경로 없음",
+    });
   }
 
   return Response.json(results);
