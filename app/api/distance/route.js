@@ -2,6 +2,12 @@ export async function POST(req) {
   const { origin, destinations } = await req.json();
   const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
+  if (!API_KEY) {
+    return Response.json([
+      { destination: "전체", distance: "API 키 없음" }
+    ]);
+  }
+
   const url =
     "https://maps.googleapis.com/maps/api/distancematrix/json" +
     `?origins=${encodeURIComponent(origin)}` +
