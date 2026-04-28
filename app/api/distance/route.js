@@ -1,118 +1,62 @@
 export async function POST(req) {
   const { origin, destinations } = await req.json();
+
   const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
-  if (!API_KEY) {
-    return Response.json([
-      { destination: "전체", distance: "API 키 없음" }
-    ]);
-  }
+  const results = [];
 
-  async function geocode(address) {
-    const url =
-      "https://maps.googleapis.com/maps/api/geocode/json" +
-      `?address=${encodeURIComponent(address + " 대한민국")}` +
-      `&language=ko` +
-      `&region=kr` +
-      `&key=${API_KEY}`;
+  for (let dest of destinations) {
+    try {
+      const res = await fetch(
+        "https://routes.googleapis.com/directions/v2:computeRoutes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": API_KEY,
 
-    const res = await fetch(url);
-    const data = await res.json();
+            // ⭐⭐⭐ 이게 핵심
+            "X-Goog-FieldMask":
+              "routes.distanceMeters,routes.duration",
+          },
+          body: JSON.stringify({
+            origin: {
+              address: origin,
+            },
+            destination: {
+              address: dest,
+            },
+            travelMode: "DRIVE",
+          }),
+        }
+      );
 
-    if (data.status !== "OK") {
-      return { error: data.error_message || data.status };
-    }
+      const data = await res.json();
 
-    const loc = data.results[0].geometry.location;
-    return `${loc.lat},${loc.lng}`;
-  }
+      if (!data.routes || data.routes.length === 0) {
+        results.push({
+          destination: dest,
+          distance: "계산 실패",
+          detail: "ZERO_RESULTS",
+        });
+        continue;
+      }
 
-  const originCoord = await geocode(origin);
+      const route = data.routes[0];
 
-  if (originCoord.error) {
-    return Response.json([
-      {
-        destination: "전체",
-        distance: "출발지 좌표 변환 실패",
-        detail: originCoord.error,
-      },
-    ]);
-  }
-
-  const destCoords = [];
-
-  for (const dest of destinations) {
-    const coord = await geocode(dest);
-
-    if (coord.error) {
-      destCoords.push(null);
-    } else {
-      destCoords.push(coord);
-    }
-  }
-
-  const validCoords = destCoords.filter(Boolean);
-
-  if (validCoords.length === 0) {
-    return Response.json([
-      {
-        destination: "전체",
-        distance: "도착지 좌표 변환 실패",
-      },
-    ]);
-  }
-
-  const url =
-    "https://maps.googleapis.com/maps/api/distancematrix/json" +
-    `?origins=${encodeURIComponent(originCoord)}` +
-    `&destinations=${encodeURIComponent(validCoords.join("|"))}` +
-    `&mode=driving` +
-    `&language=ko` +
-    `&region=kr` +
-    `&units=metric` +
-    `&key=${API_KEY}`;
-
-  const res = await fetch(url);
-  const data = await res.json();
-
-  if (data.status !== "OK") {
-    return Response.json([
-      {
-        destination: "전체",
-        distance: "Distance Matrix API 오류",
-        detail: data.error_message || data.status,
-      },
-    ]);
-  }
-
-  const elements = data.rows?.[0]?.elements || [];
-  let validIndex = 0;
-
-  const results = destinations.map((dest, index) => {
-    if (!destCoords[index]) {
-      return {
+      results.push({
         destination: dest,
-        distance: "좌표 변환 실패",
-      };
-    }
-
-    const item = elements[validIndex];
-    validIndex++;
-
-    if (!item || item.status !== "OK") {
-      return {
+        distance: (route.distanceMeters / 1000).toFixed(1) + " km",
+        duration: route.duration.replace("s", "초"),
+      });
+    } catch (err) {
+      results.push({
         destination: dest,
-        distance: "계산 실패",
-        detail: item?.status || "응답 없음",
-      };
+        distance: "에러",
+        detail: err.message,
+      });
     }
-
-    return {
-      destination: dest,
-      distance: item.distance.text,
-      duration: item.duration.text,
-    };
-  });
+  }
 
   return Response.json(results);
 }
