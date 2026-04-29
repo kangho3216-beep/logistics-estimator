@@ -4,18 +4,45 @@ export async function POST(req) {
 
   const results = [];
 
-  for (let dest of destinations) {
+  for (const dest of destinations) {
     try {
-      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(
-        origin
-      )}&destination=${encodeURIComponent(
-        dest
-      )}&mode=driving&language=ko&region=kr&key=${API_KEY}`;
+      const res = await fetch(
+        "https://routes.googleapis.com/directions/v2:computeRoutes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": API_KEY,
+            "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
+          },
+          body: JSON.stringify({
+            origin: {
+              address: origin,
+            },
+            destination: {
+              address: dest,
+            },
+            travelMode: "DRIVE",
+            languageCode: "ko-KR",
+            units: "METRIC",
+          }),
+        }
+      );
 
-      const res = await fetch(url);
       const data = await res.json();
 
-      if (!data.routes || data.routes.length === 0) {
+      if (!res.ok) {
+        results.push({
+          destination: dest,
+          distance: "API 오류",
+          detail: data.error?.message || "알 수 없는 오류",
+        });
+        continue;
+      }
+
+      const route = data.routes?.[0];
+
+      if (!route?.distanceMeters) {
         results.push({
           destination: dest,
           distance: "경로 없음",
@@ -23,17 +50,16 @@ export async function POST(req) {
         continue;
       }
 
-      const leg = data.routes[0].legs[0];
-
       results.push({
         destination: dest,
-        distance: leg.distance.text,
-        duration: leg.duration.text,
+        distance: `${(route.distanceMeters / 1000).toFixed(1)} km`,
+        duration: route.duration || "",
       });
     } catch (err) {
       results.push({
         destination: dest,
         distance: "에러",
+        detail: err.message,
       });
     }
   }
